@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream - Lumina</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-dark: #121212;
+            --card-bg: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --accent-color: #2c2c2c;
+            --hover-color: #3d3d3d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--background-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .nav-bar {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 80px auto 0;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        .show-info {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: black;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .episodes-container {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            height: max-content;
+            position: sticky;
+            top: 100px;
+        }
+
+        .season-select {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent-color);
+            color: var(--text-primary);
+            border: 1px solid var(--text-secondary);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        .episode {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--accent-color);
+        }
+
+        .episode:hover {
+            background: var(--hover-color);
+        }
+
+        .episode.active {
+            border: 1px solid var(--text-primary);
+        }
+
+        .episode-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .episode-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .episode-overview {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .play-button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent-color);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin: 1rem 0;
+            transition: all 0.3s;
+        }
+
+        .play-button:hover {
+            background: var(--hover-color);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-bar">
+        <button onclick="window.history.back()" class="back-btn">←</button>
+        <h1>Lumina Stream</h1>
+    </nav>
+
+    <div class="container">
+        <div class="show-info">
+            <img id="showPoster" class="w-full h-auto rounded-lg mb-4" src="" alt="Show Poster">
+            <h2 id="showTitle" style="margin-bottom: 0.5rem"></h2>
+            <p id="showOverview" style="color: var(--text-secondary); margin-bottom: 1rem"></p>
+            <div class="episode-info">
+                <h3 id="episodeTitle" style="margin-bottom: 0.5rem"></h3>
+                <p id="episodeDetails" style="color: var(--text-secondary)"></p>
+            </div>
+            <button class="play-button" onclick="playEpisode()">Watch</button>
+        </div>
+
+        <div class="episodes-container">
+            <select id="seasonSelect" class="season-select" onchange="changeSeason()"></select>
+            <div id="episodesList"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkMmIwMzY4NTAyYzEwY2YyMDQ4OThiYjg3MTgyYzAxMCIsIm5iZiI6MTc0NDkyNzMyMC4yMzEsInN1YiI6IjY4MDE3YTU4MmU4OTU4ZjBmOTk5NWQ0MSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I22MMgWKL1X-2czV96nC49I4L3Fj_iKJm8qO_hm2GKk";
+        const BASE_URL = "https://api.themoviedb.org/3";
+        const IMG_BASE = "https://image.tmdb.org/t/p/w500";
+
+        let currentShow = null;
+        let currentEpisode = null;
+
+        async function initializeShow() {
+            const params = new URLSearchParams(window.location.search);
+            const imdbID = params.get('imdb');
+            const type = params.get('type');
+
+            if (!imdbID || type !== 'tv') {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            try {
+                const externalRes = await fetch(`${BASE_URL}/find/${imdbID}?external_source=imdb_id`, {
+                    headers: { Authorization: API_TOKEN }
+                });
+                const externalData = await externalRes.json();
+
+                if (!externalData.tv_results || !externalData.tv_results[0]) {
+                    throw new Error('TV show not found');
+                }
+
+                const tmdbID = externalData.tv_results[0].id;
+
+                const res = await fetch(`${BASE_URL}/tv/${tmdbID}`, {
+                    headers: { Authorization: API_TOKEN }
+                });
+                const data = await res.json();
+
+                currentShow = {
+                    id: tmdbID,
+                    imdb: imdbID,
+                    title: data.name,
+                    overview: data.overview,
+                    poster: data.poster_path ? IMG_BASE + data.poster_path : null,
+                    seasons: data.seasons
+                        .filter(s => s.season_number > 0)
+                        .map(s => ({
+                            number: s.season_number,
+                            name: s.name,
+                            episodes: []
+                        }))
+                };
+
+                const saved = JSON.parse(localStorage.getItem(`lastWatched-${imdbID}`));
+                const seasonToLoad = saved?.season || 1;
+
+                // Load episodes first
+                await loadSeasonEpisodes(seasonToLoad);
+
+                // Restore episode after season episodes are loaded
+                if (saved?.episodeId) {
+                    const season = currentShow.seasons.find(s => s.number === saved.season);
+                    const foundEpisode = season?.episodes.find(e => e.id === saved.episodeId);
+                    if (foundEpisode) {
+                        currentEpisode = foundEpisode;
+                    }
+                }
+
+                // Now that currentEpisode is set, update everything
+                updateUI();
+                updateEpisodesList(currentEpisode?.season || seasonToLoad);
+                updateEpisodeInfo();
+
+            } catch (err) {
+                console.error("Error loading show:", err);
+            }
+        }
+
+        async function loadSeasonEpisodes(seasonNum) {
+            if (!currentShow || !currentShow.id) return [];
+
+            try {
+                const res = await fetch(`${BASE_URL}/tv/${currentShow.id}/season/${seasonNum}`, {
+                    headers: { Authorization: API_TOKEN }
+                });
+                const data = await res.json();
+
+                const season = currentShow.seasons.find(s => s.number === seasonNum);
+                season.episodes = data.episodes.map(ep => ({
+                    id: ep.id,
+                    number: ep.episode_number,
+                    season: seasonNum,
+                    title: ep.name,
+                    overview: ep.overview,
+                    still: ep.still_path ? IMG_BASE + ep.still_path : null,
+                    duration: ep.runtime || 45
+                }));
+
+                // If no episode selected yet, pick the first one
+                if (!currentEpisode && season.episodes.length > 0) {
+                    currentEpisode = season.episodes[0];
+                }
+
+                document.getElementById('showPoster').src = currentShow.poster;
+            } catch (err) {
+                console.error("Error loading episodes:", err);
+            }
+        }
+
+        function updateUI() {
+            if (!currentShow) return;
+
+            document.getElementById('showTitle').textContent = currentShow.title;
+            document.getElementById('showOverview').textContent = currentShow.overview;
+
+            const seasonSelect = document.getElementById('seasonSelect');
+            seasonSelect.innerHTML = currentShow.seasons
+                .map(s => `<option value="${s.number}">Season ${s.number}</option>`)
+                .join('');
+
+            if (currentEpisode) {
+                seasonSelect.value = currentEpisode.season;
+            }
+        }
+
+        function updateEpisodesList(seasonNum) {
+            const season = currentShow.seasons.find(s => s.number === parseInt(seasonNum));
+            const list = document.getElementById('episodesList');
+
+            list.innerHTML = season.episodes.map(ep => `
+                <div class="episode ${currentEpisode?.id === ep.id ? 'active' : ''}"
+                     onclick="selectEpisode(${ep.id}, ${season.number})">
+                    <div class="episode-title">S${season.number}E${ep.number}: ${ep.title}</div>
+                    <div class="episode-details">${ep.duration} min</div>
+                    <div class="episode-overview">${ep.overview || 'No description available.'}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateEpisodeInfo() {
+            if (!currentEpisode) return;
+
+            document.getElementById('episodeTitle').textContent =
+                `S${currentEpisode.season}E${currentEpisode.number}: ${currentEpisode.title}`;
+            document.getElementById('episodeDetails').textContent =
+                `${currentEpisode.duration} minutes`;
+
+            localStorage.setItem(`lastWatched-${currentShow.imdb}`, JSON.stringify({
+                episodeId: currentEpisode.id,
+                season: currentEpisode.season
+            }));
+        }
+
+        function selectEpisode(episodeId, seasonNum) {
+            const season = currentShow.seasons.find(s => s.number === seasonNum);
+            currentEpisode = season.episodes.find(ep => ep.id === episodeId);
+
+            localStorage.setItem(`lastWatched-${currentShow.imdb}`, JSON.stringify({
+                episodeId: currentEpisode.id,
+                season: currentEpisode.season
+            }));
+
+            updateEpisodeInfo();
+            updateEpisodesList(seasonNum); // Refresh list to reflect active border
+        }
+
+        function playEpisode() {
+            if (!currentEpisode || !currentShow) return;
+            const params = new URLSearchParams(window.location.search);
+            const urlpassant = params.get('imdb');
+            console.log(urlpassant); 
+            window.location.href = `media.html?id=${urlpassant}&season=${currentEpisode.season}&episode=${currentEpisode.number}`;
+      
+
+        }
+
+        function changeSeason() {
+            const seasonNum = parseInt(document.getElementById('seasonSelect').value);
+            loadSeasonEpisodes(seasonNum).then(() => {
+                updateEpisodesList(seasonNum);
+                updateEpisodeInfo();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeShow);
+    </script>
+
+
+
+</body>
+</html>
