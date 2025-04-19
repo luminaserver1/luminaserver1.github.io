@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lumina Media</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #0f0f0f;
+      color: #ffffff;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    iframe {
+      border: none;
+      width: 100vw;
+      height: 100vh;
+    }
+    .caption-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: linear-gradient(to bottom, rgba(15,15,15,0.9), rgba(15,15,15,0));
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+    }
+    .caption-bar h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .caption-bar .controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    .caption-bar .info-btn {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    #movieInfoPanel {
+      transition: all 0.3s ease-in-out;
+    }
+    .loading-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      font-weight: bold;
+      color: white;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div class="caption-bar">
+    <button onclick="window.history.back()" class="text-white text-xl">&#8592;</button>
+    <h1>❄ Lumina</h1>
+    <div class="controls">
+      <div id="timeDisplay" class="text-red-400 font-mono text-sm"></div>
+      <div class="info-btn" onclick="toggleInfoPanel()">i</div>
+    </div>
+  </div>
+
+  <div id="movieInfoPanel" class="transition-all duration-300 ease-in-out opacity-0 pointer-events-none absolute top-16 right-4 max-w-md bg-[#1e1e1e] rounded-lg shadow-lg text-sm text-white p-5 z-50">
+    <div id="movieDetails"></div>
+  </div>
+
+  <div id="loadingText" class="loading-text">
+    Loading Media With Lumina...
+  </div>
+
+  <div id="videoContainer"></div>
+
+  <script>
+    const API_KEY = "756f44a5"; // OMDB API Key
+    const workerURL = "https://use-1-tv.rspxyum.workers.dev/"; // Your worker URL
+
+    const watchState = { currentTime: 0, duration: 0, imdbID: null };
+    let playerIframe = null;
+
+    function getStoredTime(imdbID) {
+      const stored = localStorage.getItem(`watchTime_${imdbID}`);
+      return stored ? parseFloat(stored) : 0;
+    }
+
+    function storeTime(imdbID, time) {
+      localStorage.setItem(`watchTime_${imdbID}`, time);
+    }
+
+    function setupPostMessageHandling() {
+      window.addEventListener("message", (event) => {
+        if (typeof event.data === "object" && event.data.type === "PLAYER_EVENT") {
+          const { currentTime, duration } = event.data.data;
+          if (typeof currentTime === "number") {
+            watchState.currentTime = currentTime;
+            watchState.duration = duration;
+            storeTime(watchState.imdbID, currentTime);
+          }
+        }
+      });
+    }
+
+    async function setupPlayer() {
+      const params = new URLSearchParams(window.location.search);
+      const imdbID = params.get("id");
+      const season = params.get("season") || 1;
+      const episode = params.get("episode") || 1;
+
+      if (!imdbID) return; // Make sure imdbID is not null before continuing
+
+      watchState.imdbID = imdbID;
+      const savedTime = getStoredTime(imdbID);
+      watchState.currentTime = savedTime;
+
+      document.getElementById('loadingText').style.display = 'block';
+
+      // Fetch the video URL from your worker server
+      const response = await fetch(`${workerURL}?id=${imdbID}&season=${season}&episode=${episode}`);
+      const data = await response.json();
+
+      if (data && data.edgeUrl) {
+        const iframe = document.createElement("iframe");
+        iframe.src = data.edgeUrl; // Set the iframe source to the worker's response
+        iframe.id = "movieIframe";
+        iframe.setAttribute("referrerpolicy", "origin");
+        iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation allow-popups");
+        iframe.setAttribute("allow", "fullscreen; autoplay; encrypted-media");
+        iframe.textContent = "Your browser does not support iframes.";
+
+        document.getElementById("videoContainer").appendChild(iframe);
+        playerIframe = iframe;
+
+        iframe.onload = () => {
+          document.getElementById('loadingText').style.display = 'none';
+          setTimeout(() => {
+            iframe.contentWindow.postMessage(
+              JSON.stringify({ player: true, action: `seek+${savedTime}` }), '*'
+            );
+          }, 2500);
+        };
+      } else {
+        alert("Failed to load video.");
+      }
+
+      // Fetch OMDB Details for Info Panel
+      const omdbRes = await fetch(`https://www.omdbapi.com/?i=${imdbID}&apikey=${API_KEY}`);
+      const show = await omdbRes.json();
+      document.getElementById("movieDetails").innerHTML = `
+        <div class="movie-details max-w-4xl text-left">
+          <div class="mb-4">
+            <img class="rounded-lg w-full" src="${show.Poster}" alt="Poster" />
+          </div>
+          <h2 class='text-2xl font-bold'>${show.Title} (${show.Year})</h2>
+          <p class='mt-1 text-sm text-gray-300'>Season ${season} Episode ${episode} | IMDb: ${show.imdbRating}</p>
+          <p class='mt-2 text-gray-400'>${show.Plot}</p>
+          <p class='mt-2 text-sm'>Directed by: <strong>${show.Director}</strong></p>
+          <p class='text-sm'>Actors: <strong>${show.Actors}</strong></p>
+        </div>
+      `;
+    }
+
+    function toggleInfoPanel() {
+      const panel = document.getElementById("movieInfoPanel");
+      if (panel.classList.contains("opacity-0")) {
+        panel.classList.remove("opacity-0", "pointer-events-none");
+        panel.classList.add("opacity-100");
+      } else {
+        panel.classList.add("opacity-0", "pointer-events-none");
+        panel.classList.remove("opacity-100");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setupPostMessageHandling();
+      setupPlayer();
+    });
+  </script>
+
+</body>
+</html>
