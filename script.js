@@ -1,4 +1,3 @@
-
 const API_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkMmIwMzY4NTAyYzEwY2YyMDQ4OThiYjg3MTgyYzAxMCIsIm5iZiI6MTc0NDkyNzMyMC4yMzEsInN1YiI6IjY4MDE3YTU4MmU4OTU4ZjBmOTk5NWQ0MSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I22MMgWKL1X-2czV96nC49I4L3Fj_iKJm8qO_hm2GKk";
 const BASE_URL = "https://api.themoviedb.org/3";
 const IMG_BASE = "https://image.tmdb.org/t/p/w500";
@@ -23,7 +22,7 @@ async function displayTrending() {
     const type = document.getElementById("typeFilter").value;
     const items = await fetchTrending(type);
     const container = document.getElementById("trendingSlider");
-    
+
     container.innerHTML = items.slice(0, 10).map(item => `
         <div class="movie-card">
             <img src="${IMG_BASE}${item.poster_path}" alt="${item.title || item.name}" class="movie-poster">
@@ -118,7 +117,7 @@ async function searchMovies() {
         // Search both movies and TV shows
         const movieResults = await fetchMovies("movie", 25, "", "", term);
         const tvResults = await fetchMovies("tv", 25, "", "", term);
-        
+
         // Combine and sort results by popularity
         const combinedResults = [...movieResults, ...tvResults]
             .sort((a, b) => b.popularity - a.popularity);
@@ -225,10 +224,79 @@ function hideLoading() {
     document.getElementById('movies').style.display = 'grid';
 }
 
+function displayResumeSection() {
+    const resumeItems = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('watchProgress_')) {
+            const imdbId = key.replace('watchProgress_', '');
+            const data = JSON.parse(localStorage.getItem(key));
+            if (data.currentTime > 0 && data.duration > 0) {
+                resumeItems.push({ 
+                    imdbId, 
+                    type: data.type || 'movie',
+                    title: data.title,
+                    poster: data.poster,
+                    season: data.season,
+                    episodeId: data.episode,
+                    progress: (data.currentTime / data.duration) * 100
+                });
+            }
+        }
+    }
+
+    if (resumeItems.length > 0) {
+        const container = document.createElement('div');
+        container.className = 'resume-section';
+        container.innerHTML = '<h2>Continue Watching</h2><div class="resume-items"></div>';
+
+        const moviesGrid = document.getElementById('movies');
+        moviesGrid.parentNode.insertBefore(container, moviesGrid);
+
+        const itemsContainer = container.querySelector('.resume-items');
+
+        resumeItems.forEach(async item => {
+            const url = `${BASE_URL}/find/${item.imdbId}?external_source=imdb_id`;
+            try {
+                const res = await fetch(url, { headers: { Authorization: API_TOKEN } });
+                const data = await res.json();
+                const show = data.tv_results[0] || data.movie_results[0];
+
+                if (show) {
+                    const poster = show.poster_path ? IMG_BASE + show.poster_path : 'https://via.placeholder.com/300x450?text=No+Poster';
+                    const title = show.title || show.name;
+                    const type = show.title ? 'movie' : 'tv';
+
+                    const resumeCard = document.createElement('div');
+                    resumeCard.className = 'movie-card resume-card';
+                    const progress = JSON.parse(localStorage.getItem(`watchProgress_${item.imdbId}`));
+                    const progressPercent = progress ? (progress.currentTime / progress.duration) * 100 : 0;
+
+                    resumeCard.innerHTML = `
+                        <img src="${poster}" alt="${title}" class="movie-poster">
+                        <div class="movie-info">
+                            <h3 class="movie-title">${title}</h3>
+                            ${type === 'tv' ? `<p class="episode-info">S${item.season} E${item.episodeId}</p>` : ''}
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                            </div>
+                            <button onclick="window.location.href = '${type === 'tv' ? 'media' : 'watch'}.html?id=${item.imdbId}${type === 'tv' ? `&season=${item.season}&episode=${item.episodeId}` : ''}&type=${type}'" class="watch-btn">Resume</button>
+                        </div>
+                    `;
+                    itemsContainer.appendChild(resumeCard);
+                }
+            } catch (error) {
+                console.error("Error fetching resume item:", error);
+            }
+        });
+    }
+}
+
 // Initialize the page
 document.addEventListener("DOMContentLoaded", () => {
+    displayResumeSection();
     fetchCategoryData("action");
-    
+
     // Add search on Enter key
     document.getElementById("searchInput").addEventListener("keypress", (e) => {
         if (e.key === "Enter") searchMovies();
