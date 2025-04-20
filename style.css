@@ -157,6 +157,33 @@ body {
 }
 
 /* Trending Section */
+.resume-section {
+    margin: 2rem 0;
+}
+
+.resume-section h2 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.resume-items {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding: 1rem 0;
+}
+
+.resume-card {
+    min-width: 200px;
+}
+
+.resume-card .episode-info {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin: 0.5rem 0;
+}
+
 .trending-section {
     margin: 2rem 0;
 }
@@ -169,11 +196,31 @@ body {
 
 .trending-slider {
     display: flex;
-    gap: 1rem;
+    gap: 1.5rem;
     overflow-x: auto;
-    padding: 1rem 0;
+    padding: 1.5rem 0;
     scrollbar-width: thin;
     scrollbar-color: var(--secondary-color) transparent;
+}
+
+.trending-slider .movie-card {
+    min-width: 280px;
+}
+
+.trending-slider .movie-poster {
+    aspect-ratio: 16/9;
+    height: 180px;
+    object-fit: cover;
+}
+
+@media (max-width: 768px) {
+    .trending-slider .movie-card {
+        min-width: 220px;
+    }
+    
+    .trending-slider .movie-poster {
+        height: 140px;
+    }
 }
 
 /* Categories */
@@ -337,9 +384,28 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    body {
+        overflow-x: hidden;
+    }
+
+    .navbar {
+        height: 60px;
+    }
+
     .nav-content {
-        flex-direction: column;
-        gap: 1rem;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 0.25rem;
+    }
+
+    .nav-left {
+        flex: 0 0 100%;
+        justify-content: space-between;
+    }
+
+    .logo {
+        font-size: 1.5rem;
     }
 
     .search-container {
@@ -347,12 +413,82 @@ body {
         margin: 0;
     }
 
+    .search-bar {
+        padding: 0.35rem;
+    }
+
+    .search-bar input {
+        font-size: 0.9rem;
+    }
+
     .filters {
         flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .filter-input {
+        padding: 0.5rem;
+        font-size: 0.9rem;
     }
 
     .movies-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.5rem;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .movie-card {
+        margin-bottom: 0;
+    }
+
+    .movie-info {
+        padding: 0.5rem;
+    }
+
+    .watch-btn {
+        padding: 0.35rem;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+
+    .movie-card {
+        margin-bottom: 0.5rem;
+    }
+
+    .movie-info {
+        padding: 0.75rem;
+    }
+
+    .movie-title {
+        font-size: 0.85rem;
+    }
+
+    .watch-btn {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .content-wrapper {
+        padding: 1rem;
+        margin-top: 110px;
+    }
+
+    .resume-items {
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+    }
+
+    .resume-card {
+        min-width: 140px;
+    }
+
+    .categories {
+        gap: 0.5rem;
+    }
+
+    .category-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
     }
 }
