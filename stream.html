@@ -2,10 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Stream - Lumina</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
         :root {
             --background-dark: #121212;
             --card-bg: #1a1a1a;
@@ -52,11 +59,60 @@
 
         .container {
             max-width: 1400px;
-            margin: 80px auto 0;
-            padding: 2rem;
+            margin: 60px auto 0;
+            padding: 0.5rem;
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 2rem;
+            gap: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+            
+            .nav-bar {
+                height: 60px;
+                padding: 0.5rem;
+            }
+            
+            .back-btn {
+                padding: 0.5rem;
+                font-size: 1.25rem;
+            }
+            .container {
+                grid-template-columns: 1fr;
+                margin-top: 60px;
+                padding: 0.75rem;
+                gap: 1rem;
+            }
+
+            .episodes-container {
+                position: relative;
+                top: 0;
+            }
+
+            .episode {
+                padding: 0.75rem;
+            }
+
+            .episode-title {
+                font-size: 0.9rem;
+            }
+
+            .episode-details {
+                font-size: 0.8rem;
+            }
+
+            .nav-bar {
+                padding: 0.75rem;
+            }
+
+            .caption-bar h1 {
+                font-size: 1.1rem;
+            }
         }
 
         .show-info {
@@ -231,16 +287,15 @@
                 // Load episodes first
                 await loadSeasonEpisodes(seasonToLoad);
 
-                // Restore episode after season episodes are loaded
+                // Restore episode using episode number (not internal TMDB id)
                 if (saved?.episodeId) {
                     const season = currentShow.seasons.find(s => s.number === saved.season);
-                    const foundEpisode = season?.episodes.find(e => e.id === saved.episodeId);
+                    const foundEpisode = season?.episodes.find(e => e.number === saved.episodeId);
                     if (foundEpisode) {
                         currentEpisode = foundEpisode;
                     }
                 }
 
-                // Now that currentEpisode is set, update everything
                 updateUI();
                 updateEpisodesList(currentEpisode?.season || seasonToLoad);
                 updateEpisodeInfo();
@@ -270,7 +325,6 @@
                     duration: ep.runtime || 45
                 }));
 
-                // If no episode selected yet, pick the first one
                 if (!currentEpisode && season.episodes.length > 0) {
                     currentEpisode = season.episodes[0];
                 }
@@ -303,7 +357,7 @@
 
             list.innerHTML = season.episodes.map(ep => `
                 <div class="episode ${currentEpisode?.id === ep.id ? 'active' : ''}"
-                     onclick="selectEpisode(${ep.id}, ${season.number})">
+                     onclick="selectEpisode(${ep.number}, ${season.number})">
                     <div class="episode-title">S${season.number}E${ep.number}: ${ep.title}</div>
                     <div class="episode-details">${ep.duration} min</div>
                     <div class="episode-overview">${ep.overview || 'No description available.'}</div>
@@ -320,32 +374,29 @@
                 `${currentEpisode.duration} minutes`;
 
             localStorage.setItem(`lastWatched-${currentShow.imdb}`, JSON.stringify({
-                episodeId: currentEpisode.id,
+                episodeId: currentEpisode.number, // Save episode number
                 season: currentEpisode.season
             }));
         }
 
-        function selectEpisode(episodeId, seasonNum) {
+        function selectEpisode(episodeNumber, seasonNum) {
             const season = currentShow.seasons.find(s => s.number === seasonNum);
-            currentEpisode = season.episodes.find(ep => ep.id === episodeId);
+            currentEpisode = season.episodes.find(ep => ep.number === episodeNumber);
 
             localStorage.setItem(`lastWatched-${currentShow.imdb}`, JSON.stringify({
-                episodeId: currentEpisode.id,
-                season: currentEpisode.season
+                episodeId: currentEpisode.number, // Save actual episode number
+                season: seasonNum
             }));
 
             updateEpisodeInfo();
-            updateEpisodesList(seasonNum); // Refresh list to reflect active border
+            updateEpisodesList(seasonNum);
         }
 
         function playEpisode() {
             if (!currentEpisode || !currentShow) return;
             const params = new URLSearchParams(window.location.search);
             const urlpassant = params.get('imdb');
-            console.log(urlpassant); 
             window.location.href = `media.html?id=${urlpassant}&season=${currentEpisode.season}&episode=${currentEpisode.number}`;
-      
-
         }
 
         function changeSeason() {
@@ -358,6 +409,7 @@
 
         document.addEventListener('DOMContentLoaded', initializeShow);
     </script>
+
 
 
 
