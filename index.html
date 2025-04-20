@@ -1,195 +1,219 @@
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="assets/favicon.ico">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <script>
-        // Function to fetch the tokens from the JSON file on GitHub
-        async function fetchTokens() {
-            try {
-                const response = await fetch("https://raw.githubusercontent.com/Molnsc/WatchWithAzrys/refs/heads/main/lumina.json");
-                const data = await response.json();
-                return data.tokens || [];
-            } catch (error) {
-                console.error("Error fetching tokens:", error);
-                alert("Error loading token data.");
-                return [];
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Lumina</title>
+        <link rel="stylesheet" href="style.css">
+        <link rel="icon" href="assets/favicon.ico">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+            .resume-section {
+                margin: 2rem 0;
+                padding: 1rem;
             }
-        }
-
-        // Function to show the token entry modal
-        function showTokenModal() {
-            const modal = document.createElement("div");
-            modal.id = "tokenModal";
-            modal.style.position = "fixed";
-            modal.style.top = "0";
-            modal.style.left = "0";
-            modal.style.width = "100vw";
-            modal.style.height = "100vh";
-            modal.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-            modal.style.display = "flex";
-            modal.style.justifyContent = "center";
-            modal.style.alignItems = "center";
-            modal.style.zIndex = "1000";
-
-            const modalContent = document.createElement("div");
-            modalContent.style.backgroundColor = "#1a1a1a";
-            modalContent.style.padding = "20px";
-            modalContent.style.borderRadius = "8px";
-            modalContent.style.color = "#fff";
-            modalContent.style.textAlign = "center";
-            modalContent.style.maxWidth = "400px";
-            modalContent.style.width = "100%";
-
-            const message = document.createElement("h3");
-            message.innerText = "Please Enter Access Token";
-            modalContent.appendChild(message);
-
-            const input = document.createElement("input");
-            input.type = "text";
-            input.placeholder = "Enter Access Token";
-            input.style.padding = "10px";
-            input.style.marginTop = "20px";
-            input.style.width = "80%";
-            input.style.borderRadius = "6px";
-            input.style.border = "1px solid #ccc";
-            input.style.color = "#fff";
-            input.style.backgroundColor = "#2d2d2d";
-            modalContent.appendChild(input);
-
-            const submitBtn = document.createElement("button");
-            submitBtn.innerText = "Submit";
-            submitBtn.style.padding = "10px 20px";
-            submitBtn.style.marginTop = "20px";
-            submitBtn.style.backgroundColor = "#2d2d2d";
-            submitBtn.style.color = "#fff";
-            submitBtn.style.border = "none";
-            submitBtn.style.borderRadius = "6px";
-            submitBtn.style.cursor = "pointer";
-            submitBtn.style.transition = "transform 0.3s ease";
-            submitBtn.onclick = () => handleTokenSubmit(input.value);
-            modalContent.appendChild(submitBtn);
-
-            modal.appendChild(modalContent);
-            document.body.appendChild(modal);
-        }
-
-        // Handle the token submission
-        async function handleTokenSubmit(token) {
-            const tokens = await fetchTokens();
-            const tokenMatch = tokens.find(tokenObj => tokenObj.tokendata === token);
-
-            if (tokenMatch) {
-                // Save the person's name to localStorage
-                localStorage.setItem("person", tokenMatch.person);
-                alert(`Welcome, ${tokenMatch.person}!`);
-                document.getElementById("tokenModal").remove(); // Close the modal
-            } else {
-                alert("Incorrect Info");
-                window.location.reload(); // Reload to allow the user to try again
+            .resume-items {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 1rem;
             }
-        }
-
-        // Function to check the token status when the page loads
-        async function checkToken() {
-            const storedPerson = localStorage.getItem("person");
-            if (storedPerson) {
-                // If a person is already saved in localStorage, skip the token prompt
-                const versionTag = document.querySelector(".version-tag");
-                versionTag.textContent = storedPerson;
-                return;
+            .progress-bar {
+                width: 100%;
+                height: 4px;
+                background: rgba(128, 128, 128, 0.3);
+                margin-top: 8px;
+                border-radius: 2px;
+                overflow: hidden;
             }
-
-            // Show the token modal if no person is found in localStorage
-            showTokenModal();
-        }
-
-        // Run the function when the page loads
-        document.addEventListener("DOMContentLoaded", checkToken);
-
-
-    </script>
-    <nav class="navbar">
-        <div class="nav-content">
-            <div class="nav-left">
-                <h1 class="logo">Lumina</h1>
-                <span class="version-tag">Beta 1.516</span>
-            </div>
-            <div class="search-container">
-                <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="Search movies and TV shows...">
-                    <button class="search-btn" onclick="searchMovies()">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-                        </svg>
-                    </button>
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #8b5cf6, #6366f1);
+                transition: width 0.3s;
+            }
+        </style>
+    </head>
+    <body>
+        <script>
+            // Function to fetch the tokens from the JSON file on GitHub
+            async function fetchTokens() {
+                try {
+                    const response = await fetch("https://raw.githubusercontent.com/Molnsc/WatchWithAzrys/refs/heads/main/lumina.json");
+                    const data = await response.json();
+                    return data.tokens || [];
+                } catch (error) {
+                    console.error("Error fetching tokens:", error);
+                    alert("Error loading token data.");
+                    return [];
+                }
+            }
+    
+            // Function to show the token entry modal
+            function showTokenModal() {
+                const modal = document.createElement("div");
+                modal.id = "tokenModal";
+                modal.style.position = "fixed";
+                modal.style.top = "0";
+                modal.style.left = "0";
+                modal.style.width = "100vw";
+                modal.style.height = "100vh";
+                modal.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+                modal.style.display = "flex";
+                modal.style.justifyContent = "center";
+                modal.style.alignItems = "center";
+                modal.style.zIndex = "1000";
+    
+                const modalContent = document.createElement("div");
+                modalContent.style.backgroundColor = "#1a1a1a";
+                modalContent.style.padding = "20px";
+                modalContent.style.borderRadius = "8px";
+                modalContent.style.color = "#fff";
+                modalContent.style.textAlign = "center";
+                modalContent.style.maxWidth = "400px";
+                modalContent.style.width = "100%";
+    
+                const message = document.createElement("h3");
+                message.innerText = "Please Enter Access Token";
+                modalContent.appendChild(message);
+    
+                const input = document.createElement("input");
+                input.type = "text";
+                input.placeholder = "Enter Access Token";
+                input.style.padding = "10px";
+                input.style.marginTop = "20px";
+                input.style.width = "80%";
+                input.style.borderRadius = "6px";
+                input.style.border = "1px solid #ccc";
+                input.style.color = "#fff";
+                input.style.backgroundColor = "#2d2d2d";
+                modalContent.appendChild(input);
+    
+                const submitBtn = document.createElement("button");
+                submitBtn.innerText = "Submit";
+                submitBtn.style.padding = "10px 20px";
+                submitBtn.style.marginTop = "20px";
+                submitBtn.style.backgroundColor = "#2d2d2d";
+                submitBtn.style.color = "#fff";
+                submitBtn.style.border = "none";
+                submitBtn.style.borderRadius = "6px";
+                submitBtn.style.cursor = "pointer";
+                submitBtn.style.transition = "transform 0.3s ease";
+                submitBtn.onclick = () => handleTokenSubmit(input.value);
+                modalContent.appendChild(submitBtn);
+    
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+            }
+    
+            // Handle the token submission
+            async function handleTokenSubmit(token) {
+                const tokens = await fetchTokens();
+                const tokenMatch = tokens.find(tokenObj => tokenObj.tokendata === token);
+    
+                if (tokenMatch) {
+                    // Save the person's name to localStorage
+                    localStorage.setItem("person", tokenMatch.person);
+                    alert(`Welcome, ${tokenMatch.person}!`);
+                    document.getElementById("tokenModal").remove(); // Close the modal
+                } else {
+                    alert("Incorrect Info");
+                    window.location.reload(); // Reload to allow the user to try again
+                }
+            }
+    
+            // Function to check the token status when the page loads
+            async function checkToken() {
+                const storedPerson = localStorage.getItem("person");
+                if (storedPerson) {
+                    // If a person is already saved in localStorage, skip the token prompt
+                    const versionTag = document.querySelector(".version-tag");
+                    versionTag.textContent = storedPerson;
+                    return;
+                }
+    
+                // Show the token modal if no person is found in localStorage
+    
+            }
+    
+            // Run the function when the page loads
+            document.addEventListener("DOMContentLoaded", checkToken);
+    
+    
+        </script>
+        <nav class="navbar">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <h1 class="logo">Lumina</h1>
+                    <span class="version-tag">Beta 1.516</span>
+                </div>
+                <div class="search-container">
+                    <div class="search-bar">
+                        <input type="text" id="searchInput" placeholder="Search movies and TV shows...">
+                        <button class="search-btn" onclick="searchMovies()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </nav>
-
-    <main>
-        <div class="content-wrapper">
-            <div class="filters-section">
-                <div class="filters">
-                    <select id="typeFilter" class="filter-input">
-                        <option value="movie">Movies</option>
-                        <option value="tv">TV Shows</option>
-                    </select>
-                    <select id="yearFilter" class="filter-input">
-                        <option value="">All Years</option>
-                        <script>
-                            const currentYear = new Date().getFullYear();
-                            for (let year = currentYear; year >= 1990; year--) {
-                                document.write(`<option value="${year}">${year}</option>`);
-                            }
-                        </script>
-                    </select>
-                    <select id="genreFilter" class="filter-input">
-                        <option value="">All Genres</option>
-                        <option value="action">Action</option>
-                        <option value="comedy">Comedy</option>
-                        <option value="horror">Horror</option>
-                        <option value="drama">Drama</option>
-                        <option value="romance">Romance</option>
-                        <option value="sci-fi">Sci-Fi</option>
-                        <option value="thriller">Thriller</option>
-                    </select>
-                    <button onclick="fetchData()" class="apply-btn">Apply Filters</button>
+        </nav>
+    
+        <main>
+            <div class="content-wrapper">
+                <div class="filters-section">
+                    <div class="filters">
+                        <select id="typeFilter" class="filter-input">
+                            <option value="movie">Movies</option>
+                            <option value="tv">TV Shows</option>
+                        </select>
+                        <select id="yearFilter" class="filter-input">
+                            <option value="">All Years</option>
+                            <script>
+                                const currentYear = new Date().getFullYear();
+                                for (let year = currentYear; year >= 1990; year--) {
+                                    document.write(`<option value="${year}">${year}</option>`);
+                                }
+                            </script>
+                        </select>
+                        <select id="genreFilter" class="filter-input">
+                            <option value="">All Genres</option>
+                            <option value="action">Action</option>
+                            <option value="comedy">Comedy</option>
+                            <option value="horror">Horror</option>
+                            <option value="drama">Drama</option>
+                            <option value="romance">Romance</option>
+                            <option value="sci-fi">Sci-Fi</option>
+                            <option value="thriller">Thriller</option>
+                        </select>
+                        <button onclick="fetchData()" class="apply-btn">Apply Filters</button>
+                    </div>
                 </div>
-            </div>
-
-            <div class="trending-section">
-                <h2>Trending Now</h2>
-                <div id="trendingSlider" class="trending-slider"></div>
-            </div>
-
-            <div class="categories-section">
-                <div class="categories">
-                    <button onclick="fetchCategoryData('action')" class="category-btn active">Action</button>
-                    <button onclick="fetchCategoryData('comedy')" class="category-btn">Comedy</button>
-                    <button onclick="fetchCategoryData('horror')" class="category-btn">Horror</button>
-                    <button onclick="fetchCategoryData('drama')" class="category-btn">Drama</button>
-                    <button onclick="fetchCategoryData('romance')" class="category-btn">Romance</button>
-                    <button onclick="fetchCategoryData('sci-fi')" class="category-btn">Sci-Fi</button>
+    
+            
+    
+                <div class="categories-section">
+                    <div class="categories">
+                        <button onclick="fetchCategoryData('action')" class="category-btn active">Action</button>
+                        <button onclick="fetchCategoryData('comedy')" class="category-btn">Comedy</button>
+                        <button onclick="fetchCategoryData('horror')" class="category-btn">Horror</button>
+                        <button onclick="fetchCategoryData('drama')" class="category-btn">Drama</button>
+                        <button onclick="fetchCategoryData('romance')" class="category-btn">Romance</button>
+                        <button onclick="fetchCategoryData('sci-fi')" class="category-btn">Sci-Fi</button>
+                    </div>
                 </div>
+    
+                <div class="loading-spinner" id="loading">
+                    <div class="spinner"></div>
+                </div>
+                <div class="trending-section">
+                    <h2>Trending Now</h2>
+                    <div id="trendingSlider" class="trending-slider"></div>
+                </div>
+                <div id="movies" class="movies-grid"></div>
             </div>
-
-            <div class="loading-spinner" id="loading">
-                <div class="spinner"></div>
-            </div>
-
-            <div id="movies" class="movies-grid"></div>
-        </div>
-    </main>
-
-    <script src="script.js"></script>
-</body>
-</html>
+            
+        </main>
+    
+        <script src="script.js"></script>
+    </body>
+    </html>
