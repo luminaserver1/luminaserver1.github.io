@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lumina Media</title>
+  <title>Media Player</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -43,19 +44,10 @@
       gap: 1rem;
       align-items: center;
     }
-    .caption-bar .info-btn {
-      width: 2rem;
-      height: 2rem;
-      border-radius: 9999px;
-      background: rgba(255,255,255,0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    #movieInfoPanel {
-      transition: all 0.3s ease-in-out;
+    #timeDisplay {
+      font-size: 1.25rem;
+      color: #f56d6d;
+      font-family: monospace;
     }
     .loading-text {
       position: absolute;
@@ -67,6 +59,35 @@
       color: white;
       z-index: 100;
     }
+    #nextEpisodeUI {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0,0,0,0.8);
+      padding: 2rem;
+      text-align: center;
+      color: white;
+      display: none;
+      z-index: 150;
+      border-radius: 1rem;
+      max-width: 80%;
+      backdrop-filter: blur(10px);
+    }
+    #progressBar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: rgba(128, 128, 128, 0.5);
+    }
+    #progressFill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #8b5cf6, #6366f1);
+      transition: width 0.5s;
+    }
   </style>
 </head>
 <body>
@@ -74,13 +95,8 @@
     <button onclick="window.history.back()" class="text-white text-xl">&#8592;</button>
     <h1>❄ Lumina</h1>
     <div class="controls">
-      <div id="timeDisplay" class="text-red-400 font-mono text-sm"></div>
-      <div class="info-btn" onclick="toggleInfoPanel()">i</div>
+      <div id="timeDisplay" class="text-red-400 font-mono text-sm">0:00:00</div>
     </div>
-  </div>
-
-  <div id="movieInfoPanel" class="transition-all duration-300 ease-in-out opacity-0 pointer-events-none absolute top-16 right-4 max-w-md bg-[#1e1e1e] rounded-lg shadow-lg text-sm text-white p-5 z-50">
-    <div id="movieDetails"></div>
   </div>
 
   <div id="loadingText" class="loading-text">
@@ -88,104 +104,221 @@
   </div>
 
   <div id="videoContainer"></div>
+  <div id="progressBar">
+    <div id="progressFill"></div>
+  </div>
+
+  <div id="nextEpisodeUI">
+    <img id="nextEpisodePoster" src="" alt="Next Episode" class="w-full rounded-lg mb-4" />
+    <h3 id="nextEpisodeTitle" class="text-xl font-bold mb-2"></h3>
+    <div>Next episode starting in <span id="nextEpisodeCountdown">10</span> seconds...</div>
+  </div>
 
   <script>
-    const API_KEY = "756f44a5"; // OMDB API Key
-    const workerURL = "https://use-1-tv.rspxyum.workers.dev/"; // Your worker URL
+    const API_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJkMmIwMzY4NTAyYzEwY2YyMDQ4OThiYjg3MTgyYzAxMCIsIm5iZiI6MTc0NDkyNzMyMC4yMzEsInN1YiI6IjY4MDE3YTU4MmU4OTU4ZjBmOTk5NWQ0MSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I22MMgWKL1X-2czV96nC49I4L3Fj_iKJm8qO_hm2GKk";
+    const OMDB_API_KEY = "756f44a5";
+    const BASE_URL = "https://api.themoviedb.org/3";
+    const workerURL = "https://use-1-tv.rspxyum.workers.dev/";
 
-    const watchState = { currentTime: 0, duration: 0, imdbID: null };
-    let playerIframe = null;
+    const watchState = {
+      currentTime: 0,
+      duration: 0,
+      imdbID: null,
+      season: 1,
+      episode: 1,
+      type: 'movie',
+      title: '',
+      poster: ''
+    };
 
-    function getStoredTime(imdbID) {
-      const stored = localStorage.getItem(`watchTime_${imdbID}`);
-      return stored ? parseFloat(stored) : 0;
+    function updateProgressBar() {
+      const progress = (watchState.currentTime / watchState.duration) * 100;
+      document.getElementById('progressFill').style.width = `${progress}%`;
     }
 
-    function storeTime(imdbID, time) {
-      localStorage.setItem(`watchTime_${imdbID}`, time);
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
 
-    function setupPostMessageHandling() {
+    function updateTimeDisplay() {
+      document.getElementById('timeDisplay').innerText = formatTime(watchState.currentTime);
+      updateProgressBar();
+    }
+
+    function saveProgress() {
+      const progressData = {
+        currentTime: watchState.currentTime,
+        duration: watchState.duration,
+        title: watchState.title,
+        poster: watchState.poster,
+        type: watchState.type,
+        season: watchState.season,
+        episode: watchState.episode,
+        lastUpdated: Date.now()
+      };
+      localStorage.setItem(`watchProgress_${watchState.imdbID}`, JSON.stringify(progressData));
+      localStorage.setItem(`lastWatched-${watchState.imdbID}`, JSON.stringify({
+        episodeId: watchState.episode,
+        season: watchState.season,
+        timestamp: Date.now()
+      }));
+    }
+
+    async function setupPostMessageHandling() {
       window.addEventListener("message", (event) => {
         if (typeof event.data === "object" && event.data.type === "PLAYER_EVENT") {
           const { currentTime, duration } = event.data.data;
-          if (typeof currentTime === "number") {
+          if (typeof currentTime === "number" && typeof duration === "number") {
             watchState.currentTime = currentTime;
             watchState.duration = duration;
-            storeTime(watchState.imdbID, currentTime);
+            updateTimeDisplay();
+            saveProgress();
+
+            // Only trigger autoplay when we're very close to the end (last 3 seconds)
+            if (duration > 0 && currentTime >= duration - 3 && currentTime <= duration) {
+              handleEpisodeEnd();
+            }
           }
         }
       });
     }
 
+    async function getNextEpisodeInfo() {
+      try {
+        // First get TMDB ID from IMDB ID
+        const findRes = await fetch(`${BASE_URL}/find/${watchState.imdbID}?external_source=imdb_id`, {
+          headers: { Authorization: API_TOKEN }
+        });
+        const findData = await findRes.json();
+        const tmdbID = findData.tv_results[0]?.id;
+        
+        if (!tmdbID) return null;
+        
+        const res = await fetch(`${BASE_URL}/tv/${tmdbID}/season/${watchState.season}`, {
+          headers: { Authorization: API_TOKEN }
+        });
+        const data = await res.json();
+        
+        let nextEpisode = watchState.episode + 1;
+        let nextSeason = watchState.season;
+        
+        if (nextEpisode > data.episodes.length) {
+          nextEpisode = 1;
+          nextSeason++;
+          const seasonRes = await fetch(`${BASE_URL}/tv/${tmdbID}/season/${nextSeason}`, {
+            headers: { Authorization: API_TOKEN }
+          });
+          if (!seasonRes.ok) return null;
+        }
+        
+        return { season: nextSeason, episode: nextEpisode };
+      } catch (error) {
+        console.error("Error getting next episode:", error);
+        return null;
+      }
+    }
+
+    async function handleEpisodeEnd() {
+      if (watchState.currentTime < watchState.duration - 10) return; // Only trigger near the end
+      
+      if (watchState.type === 'movie') {
+        setTimeout(() => window.location.href = 'index.html', 2000);
+        return;
+      }
+
+      const nextEp = await getNextEpisodeInfo();
+      if (!nextEp) {
+        setTimeout(() => window.location.href = 'index.html', 2000);
+        return;
+      }
+
+      const omdbRes = await fetch(`https://www.omdbapi.com/?i=${watchState.imdbID}&season=${nextEp.season}&episode=${nextEp.episode}&apikey=${OMDB_API_KEY}`);
+      const episodeData = await omdbRes.json();
+
+      document.getElementById('nextEpisodePoster').src = episodeData.Poster || watchState.poster;
+      document.getElementById('nextEpisodeTitle').textContent = episodeData.Title;
+      document.getElementById('nextEpisodeUI').style.display = 'block';
+
+      let countdown = 10;
+      const countdownInterval = setInterval(() => {
+        document.getElementById('nextEpisodeCountdown').textContent = countdown;
+        countdown--;
+
+        if (countdown < 0) {
+          clearInterval(countdownInterval);
+          window.location.href = `media.html?id=${watchState.imdbID}&season=${nextEp.season}&episode=${nextEp.episode}`;
+        }
+      }, 1000);
+    }
+
     async function setupPlayer() {
       const params = new URLSearchParams(window.location.search);
-      const imdbID = params.get("id");
-      const season = params.get("season") || 1;
-      const episode = params.get("episode") || 1;
+      watchState.imdbID = params.get("id");
+      watchState.season = parseInt(params.get("season")) || 1;
+      watchState.episode = parseInt(params.get("episode")) || 1;
+      watchState.type = params.get("type") || 'movie';
 
-      if (!imdbID) return; // Make sure imdbID is not null before continuing
+      if (!watchState.imdbID) return;
 
-      watchState.imdbID = imdbID;
-      const savedTime = getStoredTime(imdbID);
-      watchState.currentTime = savedTime;
+      try {
+        // Get show/movie details
+        const omdbRes = await fetch(`https://www.omdbapi.com/?i=${watchState.imdbID}&apikey=${OMDB_API_KEY}`);
+        const mediaData = await omdbRes.json();
+        watchState.title = mediaData.Title;
+        watchState.poster = mediaData.Poster;
 
-      document.getElementById('loadingText').style.display = 'block';
-
-      // Fetch the video URL from your worker server
-      const response = await fetch(`${workerURL}?id=${imdbID}&season=${season}&episode=${episode}`);
-      const data = await response.json();
-
-      if (data && data.edgeUrl) {
+        const edgeUrl = await getEdgeUrl(watchState.imdbID, watchState.season, watchState.episode);
+        
         const iframe = document.createElement("iframe");
-        iframe.src = data.edgeUrl; // Set the iframe source to the worker's response
+        iframe.src = edgeUrl;
         iframe.id = "movieIframe";
         iframe.setAttribute("referrerpolicy", "origin");
         iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation allow-popups");
         iframe.setAttribute("allow", "fullscreen; autoplay; encrypted-media");
-        iframe.textContent = "Your browser does not support iframes.";
 
         document.getElementById("videoContainer").appendChild(iframe);
-        playerIframe = iframe;
+        document.getElementById('loadingText').style.display = 'none';
 
-        iframe.onload = () => {
-          document.getElementById('loadingText').style.display = 'none';
+        // Restore progress and force autoplay
+        const savedProgress = JSON.parse(localStorage.getItem(`watchProgress_${watchState.imdbID}`));
+        
+        // Wait for player to be ready
+        setTimeout(() => {
+          if (savedProgress && savedProgress.currentTime > 0) {
+            iframe.contentWindow.postMessage(
+              JSON.stringify({ player: true, action: `seek+${savedProgress.currentTime}` }), '*'
+            );
+          }
+          
+          // Force autoplay after seeking
           setTimeout(() => {
             iframe.contentWindow.postMessage(
-              JSON.stringify({ player: true, action: `seek+${savedTime}` }), '*'
+              JSON.stringify({ player: true, action: 'play' }), '*'
             );
-          }, 2500);
-        };
-      } else {
-        alert("Failed to load video.");
-      }
+          }, 1000);
+        }, 2000);
 
-      // Fetch OMDB Details for Info Panel
-      const omdbRes = await fetch(`https://www.omdbapi.com/?i=${imdbID}&apikey=${API_KEY}`);
-      const show = await omdbRes.json();
-      document.getElementById("movieDetails").innerHTML = `
-        <div class="movie-details max-w-4xl text-left">
-          <div class="mb-4">
-            <img class="rounded-lg w-full" src="${show.Poster}" alt="Poster" />
-          </div>
-          <h2 class='text-2xl font-bold'>${show.Title} (${show.Year})</h2>
-          <p class='mt-1 text-sm text-gray-300'>Season ${season} Episode ${episode} | IMDb: ${show.imdbRating}</p>
-          <p class='mt-2 text-gray-400'>${show.Plot}</p>
-          <p class='mt-2 text-sm'>Directed by: <strong>${show.Director}</strong></p>
-          <p class='text-sm'>Actors: <strong>${show.Actors}</strong></p>
-        </div>
-      `;
+        // Check time more frequently for better accuracy
+        setInterval(() => {
+          iframe.contentWindow.postMessage(
+            JSON.stringify({ player: true, action: 'time' }), '*'
+          );
+        }, 250);
+
+      } catch (error) {
+        console.error("Error setting up player:", error);
+        document.getElementById('loadingText').textContent = "Failed to load media";
+      }
     }
 
-    function toggleInfoPanel() {
-      const panel = document.getElementById("movieInfoPanel");
-      if (panel.classList.contains("opacity-0")) {
-        panel.classList.remove("opacity-0", "pointer-events-none");
-        panel.classList.add("opacity-100");
-      } else {
-        panel.classList.add("opacity-0", "pointer-events-none");
-        panel.classList.remove("opacity-100");
-      }
+    async function getEdgeUrl(imdbID, season, episode) {
+      const response = await fetch(`${workerURL}?id=${imdbID}&season=${season}&episode=${episode}`);
+      if (!response.ok) throw new Error("Failed to fetch edge URL");
+      const data = await response.json();
+      return data.edgeUrl;
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -193,6 +326,5 @@
       setupPlayer();
     });
   </script>
-
 </body>
 </html>
