@@ -11,8 +11,17 @@
       color: #ffffff;
       margin: 0;
       padding: 0;
-      overflow: hidden;
+      overflow-x: hidden;
       position: relative;
+      min-height: 100vh;
+      width: 100vw;
+    }
+
+    #videoContainer {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 60px);
+      margin-top: 60px;
     }
     iframe {
       border: none;
@@ -30,6 +39,39 @@
       justify-content: space-between;
       align-items: center;
       padding: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .caption-bar {
+        padding: 0.75rem;
+      }
+      
+      .caption-bar h1 {
+        font-size: 1rem;
+      }
+
+      #timeDisplay {
+        font-size: 0.9rem;
+      }
+
+      #movieInfoPanel {
+        max-width: 90%;
+        right: 5%;
+        font-size: 0.9rem;
+      }
+
+      .movie-details h2 {
+        font-size: 1.25rem;
+      }
+
+      #progressBar {
+        height: 3px;
+      }
+
+      .info-btn {
+        width: 1.75rem;
+        height: 1.75rem;
+      }
     }
     .caption-bar h1 {
       font-size: 1.25rem;
@@ -67,6 +109,19 @@
       color: white;
       z-index: 100;
     }
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background-color: #333;
+      border-radius: 5px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background-color: #4CAF50;
+      width: 0%; /* Initially empty */
+    }
   </style>
 </head>
 <body>
@@ -74,7 +129,7 @@
     <button onclick="window.history.back()" class="text-white text-xl">&#8592;</button>
     <h1>❄ Lumina</h1>
     <div class="controls">
-      <div id="timeDisplay" class="text-red-400 font-mono text-sm"></div>
+      <div id="timeDisplay" class="text-red-400 font-mono text-sm">00:00:00</div>
       <div class="info-btn" onclick="toggleInfoPanel()">i</div>
     </div>
   </div>
@@ -88,13 +143,18 @@
   </div>
 
   <div id="videoContainer"></div>
+  <div id="progressBar" class="fixed bottom-0 left-0 w-full h-1 bg-gray-700">
+    <div id="progressFill" class="h-full bg-purple-600 transition-all duration-300"></div>
+  </div>
+  
 
   <script>
     const API_KEY = "756f44a5";
     const watchState = { currentTime: 0, duration: 0, imdbID: null };
-    let timeDisplay = "a";
+    let timeDisplay = null;
     let playerIframe = null;
 
+    // Format the time as hh:mm:ss
     function formatTime(seconds) {
       const h = Math.floor(seconds / 3600);
       const m = Math.floor((seconds % 3600) / 60);
@@ -102,35 +162,55 @@
       return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
 
+    // Update the displayed time
     function updateTimeDisplay() {
       if (timeDisplay) {
-        timeDisplay.innerText = "Version 1.516";
+        timeDisplay.innerText = formatTime(watchState.currentTime);
       }
     }
 
+    // Retrieve the stored time from localStorage
     function getStoredTime(imdbID) {
       const stored = localStorage.getItem(`watchTime_${imdbID}`);
       return stored ? parseFloat(stored) : 0;
     }
 
+    // Store the current time to localStorage
     function storeTime(imdbID, time) {
       localStorage.setItem(`watchTime_${imdbID}`, time);
     }
 
+    // Listen for post messages from iframe
     function setupPostMessageHandling() {
       window.addEventListener("message", (event) => {
         if (typeof event.data === "object" && event.data.type === "PLAYER_EVENT") {
           const { currentTime, duration } = event.data.data;
           if (typeof currentTime === "number") {
+            // Save progress to localStorage
             watchState.currentTime = currentTime;
             watchState.duration = duration;
             storeTime(watchState.imdbID, currentTime);
             updateTimeDisplay();
+
+            // Update progress bar
+            const progressPercent = Math.round((currentTime / duration) * 100);
+            document.getElementById('progressFill').style.width = `${progressPercent}%`;
+
+            // Save progress data for resume watching
+            localStorage.setItem(`watchProgress_${watchState.imdbID}`, JSON.stringify({
+              currentTime: currentTime,
+              duration: duration,
+              timestamp: Date.now(),
+              type: 'movie',
+              title: document.querySelector('.movie-details h2').textContent,
+              poster: document.querySelector('.movie-details img').src
+            }));
           }
         }
       });
     }
 
+    // Set up the player and iframe
     async function setupPlayer() {
       const params = new URLSearchParams(window.location.search);
       const imdbID = params.get("id");
@@ -160,10 +240,13 @@
       const rcpMatch = htmlContent.match(/\/rcp\/[a-zA-Z0-9_-]+/);
       if (rcpMatch) {
         const rcpPath = rcpMatch[0];
-        const fullUrl = `https://use-1server.rspxyum.workers.dev/?id=${imdbID}`;
+        const edgeUrl = `https://cloudnestra.com${rcpPath}`;
 
+        console.log(`TARG ERR SERVER US: ${edgeUrl}`);
+
+        // Create iframe and inject JavaScript for controlling the player
         const iframe = document.createElement("iframe");
-        iframe.src = fullUrl;
+        iframe.src = edgeUrl;
         iframe.id = "movieIframe";
         iframe.setAttribute("referrerpolicy", "origin");
         iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-presentation allow-popups");
@@ -176,6 +259,28 @@
 
         iframe.onload = () => {
           loadingText.style.display = 'none';
+
+          // Initial seek after a delay to ensure player is ready
+          setTimeout(() => {
+            if (savedTime > 0) {
+              iframe.contentWindow.postMessage(
+                JSON.stringify({ player: true, action: `seek+${savedTime}` }), '*'
+              );
+            }
+            // Force autoplay after seeking
+            setTimeout(() => {
+              iframe.contentWindow.postMessage(
+                JSON.stringify({ player: true, action: 'play' }), '*'
+              );
+            }, 1000);
+          }, 2000);
+
+          // Periodically save the current time and update progress
+          setInterval(() => {
+            iframe.contentWindow.postMessage(
+              JSON.stringify({ player: true, action: 'time' }), '*'
+            );
+          }, 1000);
         };
 
         // Fetch movie details from OMDB API
@@ -193,17 +298,12 @@
             <p class='text-sm'>Actors: <strong>${movie.Actors}</strong></p>
           </div>
         `;
-
-        setTimeout(() => {
-          iframe.contentWindow.postMessage(
-            JSON.stringify({ player: true, action: `seek+${savedTime}` }), '*'
-          );
-        }, 2500);
       } else {
         loadingText.innerText = "Failed to find video URL.";
       }
     }
 
+    // Toggle the info panel
     function toggleInfoPanel() {
       const panel = document.getElementById("movieInfoPanel");
       if (panel.classList.contains("opacity-0")) {
@@ -219,7 +319,7 @@
       timeDisplay = document.getElementById("timeDisplay");
       setupPostMessageHandling();
       setupPlayer();
-      setInterval(updateTimeDisplay, 1000);
+      setInterval(updateTimeDisplay, 1000);  // Update every second
     });
   </script>
 </body>
