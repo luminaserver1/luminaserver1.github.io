@@ -173,6 +173,10 @@ async function displayMovies(items, type) {
 async function watch(id, type, season = 1, episode = 1) {
     try {
         const imdbID = await getIMDbID(id, type);
+        
+        // Save last clicked timestamp
+        localStorage.setItem(`lastClicked_${imdbID}`, Date.now());
+        
         if (type === "tv") {
             window.location.href = `stream.html?imdb=${imdbID}&type=${type}&season=${season}&episode=${episode}`;
         } else {
@@ -180,6 +184,9 @@ async function watch(id, type, season = 1, episode = 1) {
         }
     } catch (err) {
         console.error("Error getting IMDB ID:", err);
+        // Save last clicked timestamp with fallback ID
+        localStorage.setItem(`lastClicked_${id}`, Date.now());
+        
         // Fallback to TMDB ID if IMDB ID fails
         window.location.href = type === "tv" ? 
             `stream.html?imdb=${id}&type=${type}&season=${season}&episode=${episode}` : 
@@ -232,6 +239,7 @@ function displayResumeSection() {
             const imdbId = key.replace('watchProgress_', '');
             const data = JSON.parse(localStorage.getItem(key));
             if (data.currentTime > 0 && data.duration > 0) {
+                const lastClicked = localStorage.getItem(`lastClicked_${imdbId}`);
                 resumeItems.push({ 
                     imdbId, 
                     type: data.type || 'movie',
@@ -239,11 +247,17 @@ function displayResumeSection() {
                     poster: data.poster,
                     season: data.season,
                     episodeId: data.episode,
-                    progress: (data.currentTime / data.duration) * 100
+                    progress: (data.currentTime / data.duration) * 100,
+                    currentTime: data.currentTime,
+                    duration: data.duration,
+                    lastClicked: lastClicked ? parseInt(lastClicked) : 0
                 });
             }
         }
     }
+
+    // Sort by last clicked (most recent first)
+    resumeItems.sort((a, b) => b.lastClicked - a.lastClicked);
 
     if (resumeItems.length > 0) {
         const container = document.createElement('div');
@@ -267,22 +281,53 @@ function displayResumeSection() {
                     const title = show.title || show.name;
                     const type = show.title ? 'movie' : 'tv';
 
+                    // Calculate time remaining and format times
+                    const timeLeft = item.duration - item.currentTime;
+                    const formatTime = (seconds) => {
+                        const mins = Math.floor(seconds / 60);
+                        const secs = Math.floor(seconds % 60);
+                        return `${mins}:${secs.toString().padStart(2, '0')}`;
+                    };
+
                     const resumeCard = document.createElement('div');
-                    resumeCard.className = 'movie-card resume-card';
-                    const progress = JSON.parse(localStorage.getItem(`watchProgress_${item.imdbId}`));
-                    const progressPercent = progress ? (progress.currentTime / progress.duration) * 100 : 0;
+                    resumeCard.className = 'resume-card';
+
+                    // Format episode info for TV shows
+                    const episodeInfo = type === 'tv' ? 
+                        `<div class="episode-info">
+                            <span class="episode-season">S${item.season} E${item.episodeId}</span>
+                        </div>` : 
+                        `<div class="episode-info">
+                            <span>Movie</span>
+                        </div>`;
 
                     resumeCard.innerHTML = `
-                        <img src="${poster}" alt="${title}" class="movie-poster">
+                        <div class="poster-container">
+                            <img src="${poster}" alt="${title}" class="movie-poster">
+                            <div class="play-overlay">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </div>
                         <div class="movie-info">
                             <h3 class="movie-title">${title}</h3>
-                            ${type === 'tv' ? `<p class="episode-info">S${item.season} E${item.episodeId}</p>` : ''}
+                            ${episodeInfo}
                             <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                                <div class="progress-fill" style="width: ${item.progress}%"></div>
                             </div>
-                            <button onclick="window.location.href = '${type === 'tv' ? 'media' : 'watch'}.html?id=${item.imdbId}${type === 'tv' ? `&season=${item.season}&episode=${item.episodeId}` : ''}&type=${type}'" class="watch-btn">Resume</button>
+                            <div class="time-left">${formatTime(timeLeft)} remaining</div>
                         </div>
                     `;
+
+                    // Add click event listener properly
+                    resumeCard.addEventListener('click', () => {
+                        if (type === 'tv') {
+                            window.location.href = `stream.html?id=${item.imdbId}&season=${item.season}&episode=${item.episodeId}&type=${type}`;
+                        } else {
+                            window.location.href = `watch.html?id=${item.imdbId}&type=${type}`;
+                        }
+                    });
                     itemsContainer.appendChild(resumeCard);
                 }
             } catch (error) {
