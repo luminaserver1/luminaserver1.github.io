@@ -4,6 +4,20 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Inter', sans-serif;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+input, textarea, button {
+    -webkit-user-select: auto;
+    -moz-user-select: auto;
+    -ms-user-select: auto;
+    user-select: auto;
 }
 
 :root {
@@ -24,6 +38,8 @@ body {
     color: var(--text-primary);
     overflow-x: hidden;
     min-height: 100vh;
+    touch-action: pan-x pan-y;
+    -ms-touch-action: pan-x pan-y;
 }
 
 /* Modern Navbar */
@@ -156,7 +172,7 @@ body {
     background: var(--hover-color);
 }
 
-/* Trending Section */
+/* Resume Section */
 .resume-section {
     margin: 2rem 0;
 }
@@ -165,23 +181,202 @@ body {
     color: var(--text-primary);
     margin-bottom: 1rem;
     font-size: 1.5rem;
+    font-weight: 600;
 }
 
 .resume-items {
     display: flex;
-    gap: 1rem;
+    gap: 1.5rem;
     overflow-x: auto;
-    padding: 1rem 0;
+    padding: 1.5rem 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--secondary-color) transparent;
+}
+
+.resume-items::-webkit-scrollbar {
+    height: 8px;
+}
+
+.resume-items::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.resume-items::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 4px;
 }
 
 .resume-card {
-    min-width: 200px;
+    min-width: 320px;
+    max-width: 320px;
+    background: transparent;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.resume-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+}
+
+.resume-card .poster-container {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    overflow: hidden;
+    border-radius: 12px 12px 0 0;
+    background: var(--secondary-color);
+}
+
+.resume-card .movie-poster {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+    background: var(--secondary-color);
+}
+
+.resume-card .play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: rgba(139, 92, 246, 0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    border: 3px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.resume-card:hover .play-overlay {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+    background: rgba(139, 92, 246, 1);
+    box-shadow: 0 12px 30px rgba(139, 92, 246, 0.4);
+}
+
+.resume-card .play-overlay svg {
+    width: 24px;
+    height: 24px;
+    fill: white;
+    margin-left: 3px;
+}
+
+.resume-card .movie-info {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border-radius: 0 0 12px 12px;
+}
+
+.resume-card .movie-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
 }
 
 .resume-card .episode-info {
     color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin: 0.5rem 0;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+}
+
+.resume-card .episode-season {
+    color: #8b5cf6;
+    font-weight: 600;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #8b5cf6, #6366f1);
+    transition: width 0.3s ease;
+    border-radius: 2px;
+}
+
+.resume-card .time-left {
+    color: #ff6b6b;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    background: rgba(255, 107, 107, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+/* Announcement Section */
+.announcement-section {
+    margin: 2rem 0;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.announcement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.announcement-header:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.announcement-toggle {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.announcement-toggle.collapsed {
+    transform: rotate(180deg);
+}
+
+.announcement-content {
+    padding: 1rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.announcement-content.hidden {
+    max-height: 0;
+    padding: 0 1rem;
+    opacity: 0;
 }
 
 .trending-section {
@@ -208,18 +403,20 @@ body {
 }
 
 .trending-slider .movie-poster {
-    aspect-ratio: 16/9;
-    height: 180px;
-    object-fit: cover;
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    object-position: center;
+    background: var(--secondary-color);
 }
 
 @media (max-width: 768px) {
     .trending-slider .movie-card {
         min-width: 220px;
     }
-    
+
     .trending-slider .movie-poster {
-        height: 140px;
+        height: 160px;
     }
 }
 
@@ -311,7 +508,9 @@ body {
 .movie-poster {
     width: 100%;
     aspect-ratio: 2/3;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
+    background: var(--secondary-color);
 }
 
 .movie-info {
@@ -475,12 +674,45 @@ body {
     }
 
     .resume-items {
-        gap: 0.5rem;
+        gap: 1rem;
         padding: 0.5rem 0;
     }
 
     .resume-card {
-        min-width: 140px;
+        min-width: 240px;
+        max-width: 240px;
+        flex-shrink: 0;
+    }
+
+    .resume-card .poster-container {
+        height: 160px;
+    }
+
+    .resume-card .movie-info {
+        padding: 0.75rem;
+    }
+
+    .resume-card .movie-title {
+        font-size: 0.9rem;
+    }
+
+    .resume-card .episode-info {
+        font-size: 0.8rem;
+    }
+
+    .resume-card .time-left {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .resume-card .play-overlay {
+        width: 50px;
+        height: 50px;
+    }
+
+    .resume-card .play-overlay svg {
+        width: 20px;
+        height: 20px;
     }
 
     .categories {
