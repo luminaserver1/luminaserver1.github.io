@@ -1,69 +1,573 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Lumina - Updating...</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <title>Lumina - System Update</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    html, body {
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100vh;
+      width: 100vw;
       overflow: hidden;
-      background-color: #0f0f0f;
+      background: #000000;
       font-family: 'Inter', sans-serif;
       color: #e1d5f9;
+      position: relative;
+    }
+
+    /* Animated background particles */
+    .particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: rgba(192, 132, 252, 0.4);
+      border-radius: 50%;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0; }
+      50% { transform: translateY(-100px) rotate(180deg); opacity: 1; }
+    }
+
+    .container {
+      position: relative;
+      z-index: 10;
       height: 100vh;
+      width: 100vw;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
+      padding: 1rem;
     }
 
-    .wrapper {
-      max-width: 90%;
+    .update-card {
+      background: rgba(20, 20, 20, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 20px;
+      padding: 1.5rem;
+      max-width: 95vw;
+      width: 100%;
+      max-height: 95vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6);
+      position: relative;
+      overflow-x: hidden;
     }
 
-    h1 {
+    .update-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(192, 132, 252, 0.05), transparent);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    .logo {
       font-size: 2.5rem;
-      color: #c084fc;
-      margin-bottom: 1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #4c1d95, #5b21b6, #6d28d9);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1.5rem;
+      margin-top: 0.5rem;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+      from { filter: drop-shadow(0 0 3px rgba(139, 92, 246, 0.2)); }
+      to { filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.4)); }
+    }
+
+    .version-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #4c1d95, #5b21b6);
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border-radius: 50px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .spinner-container {
+      margin: 1.5rem 0;
+      position: relative;
     }
 
     .spinner {
       width: 60px;
       height: 60px;
-      border: 5px solid rgba(255, 255, 255, 0.1);
-      border-top: 5px solid #c084fc;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .spinner-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 2px solid transparent;
       border-radius: 50%;
-      margin: 1.5rem auto;
-      animation: spin 1s linear infinite;
+      animation: spin 1.5s linear infinite;
     }
 
-    p {
-      font-size: 1rem;
-      color: #a78bfa;
+    .spinner-ring:nth-child(1) {
+      border-top-color: #7c3aed;
+      animation-delay: 0s;
     }
 
-    .subtle {
-      font-size: 0.9rem;
-      margin-top: 0.5rem;
-      color: #7c3aed;
+    .spinner-ring:nth-child(2) {
+      border-right-color: #6d28d9;
+      animation-delay: -0.3s;
+      width: 50px;
+      height: 50px;
+      top: 5px;
+      left: 5px;
+    }
+
+    .spinner-ring:nth-child(3) {
+      border-bottom-color: #5b21b6;
+      animation-delay: -0.6s;
+      width: 30px;
+      height: 30px;
+      top: 15px;
+      left: 15px;
     }
 
     @keyframes spin {
-      to {
-        transform: rotate(360deg);
+      to { transform: rotate(360deg); }
+    }
+
+    .status-text {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #a78bfa;
+      margin-bottom: 1rem;
+      animation: typewriter 4s steps(40) infinite;
+      word-wrap: break-word;
+    }
+
+    @keyframes typewriter {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0.7; }
+    }
+
+    .details {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: rgba(30, 30, 30, 0.6);
+      border-radius: 12px;
+      border: 1px solid rgba(192, 132, 252, 0.1);
+    }
+
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.8rem;
+      font-size: 0.85rem;
+    }
+
+    .detail-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-label {
+      color: #a78bfa;
+      font-weight: 500;
+    }
+
+    .detail-value {
+      color: #e1d5f9;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      margin-left: 0.5rem;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .feature-list {
+      text-align: left;
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: rgba(75, 29, 149, 0.1);
+      border-radius: 12px;
+      border-left: 3px solid #4c1d95;
+    }
+
+    .feature-list h4 {
+      color: #a78bfa;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .feature-list ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .feature-list li {
+      margin-bottom: 0.5rem;
+      font-size: 0.8rem;
+      color: #a78bfa;
+      position: relative;
+      padding-left: 1.2rem;
+      word-wrap: break-word;
+    }
+
+    .feature-list li::before {
+      content: '✨';
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-size: 0.7rem;
+    }
+
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      .container {
+        padding: 0.5rem;
       }
+
+      .update-card {
+        padding: 1.2rem;
+        border-radius: 16px;
+        max-width: 98vw;
+        max-height: 98vh;
+      }
+
+      .logo {
+        font-size: 2rem;
+      }
+
+      .version-badge {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+      }
+
+      .spinner {
+        width: 50px;
+        height: 50px;
+      }
+
+      .spinner-ring:nth-child(2) {
+        width: 40px;
+        height: 40px;
+        top: 5px;
+        left: 5px;
+      }
+
+      .spinner-ring:nth-child(3) {
+        width: 25px;
+        height: 25px;
+        top: 12.5px;
+        left: 12.5px;
+      }
+
+      .status-text {
+        font-size: 1rem;
+      }
+
+      .detail-item {
+        font-size: 0.8rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2rem;
+      }
+
+      .detail-value {
+        text-align: left;
+      }
+
+      .feature-list {
+        padding: 0.8rem;
+      }
+
+      .feature-list h4 {
+        font-size: 0.85rem;
+      }
+
+      .feature-list li {
+        font-size: 0.75rem;
+        padding-left: 1rem;
+      }
+
+      .feature-list li::before {
+        font-size: 0.6rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 0.25rem;
+      }
+
+      .update-card {
+        padding: 1rem;
+        max-width: 99vw;
+        max-height: 99vh;
+      }
+
+      .logo {
+        font-size: 1.8rem;
+      }
+
+      .status-text {
+        font-size: 0.9rem;
+      }
+
+      .detail-item {
+        font-size: 0.75rem;
+      }
+
+      .feature-list li {
+        font-size: 0.7rem;
+      }
+    }
+
+    /* Custom scrollbar */
+    .update-card::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .update-card::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .update-card::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #4c1d95, #7c3aed);
+      border-radius: 2px;
     }
   </style>
 </head>
 <body>
-  <div class="wrapper">
-    <h1>Lumina</h1>
-    <div class="spinner"></div>
-    <p>Lumina is currently undergoing updates...</p>
-    <div class="subtle">This may take a little while…</div>
+  <!-- Animated background particles -->
+  <div class="particles" id="particles"></div>
+
+  <div class="container">
+    <div class="update-card">
+      <h1 class="logo">Lumina</h1>
+      <div class="version-badge">Undergoing Updates</div>
+      
+      <div class="spinner-container">
+        <div class="spinner">
+          <div class="spinner-ring"></div>
+          <div class="spinner-ring"></div>
+          <div class="spinner-ring"></div>
+        </div>
+      </div>
+
+      <div class="status-text" id="statusText">This may take a while...</div>
+
+      <div class="details">
+        <div class="detail-item">
+          <span class="detail-label">Status</span>
+          <span class="detail-value">
+            OK
+            <span class="status-indicator"></span>
+          </span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Server Region</span>
+          <span class="detail-value" id="serverRegion">Auto-Detecting...</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Estimated Time</span>
+          <span class="detail-value">~1-24h</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Developer Notes</span>
+          <span class="detail-value">None</span>
+        </div>
+      </div>
+
+      <div class="feature-list">
+        <h4>🚀 What's New in This Update?</h4>
+        <ul>
+          <li>Enhanced streaming performance</li>
+          <li>New UI/UX improvements</li>
+          <li>New features</li>
+          <li>Mobile optimization</li>
+          <li>Bug fixes and stability</li>
+        </ul>
+      </div>
+    </div>
   </div>
+
+  <script>
+    // Create floating particles
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      const particleCount = window.innerWidth < 768 ? 30 : 50;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 6 + 's';
+        particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+        particlesContainer.appendChild(particle);
+      }
+    }
+
+    // Dynamic status messages
+    const statusMessages = [
+      "This may take a while...",
+      "Updating...",
+      "Check the estimated time!",
+      "Undergoing Updates...",
+      "This might be a long one...",
+      "Is the Server OK or BAD...",
+      "Sorry for any inconvenience...",
+      "This might take a while..."
+    ];
+
+    let messageIndex = 0;
+    const statusElement = document.getElementById('statusText');
+
+    function updateStatus() {
+      statusElement.style.opacity = '0';
+      setTimeout(() => {
+        statusElement.textContent = statusMessages[messageIndex];
+        statusElement.style.opacity = '1';
+        messageIndex = (messageIndex + 1) % statusMessages.length;
+      }, 300);
+    }
+
+    // Simulated server region detection
+    function detectServerRegion() {
+      const regions = ['US-East-Hornet', 'US-East-Antarctica', 'US-East-NorthPole', 'US-East-Butterfly'];
+      const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+      document.getElementById('serverRegion').textContent = randomRegion;
+    }
+
+    // Enhanced visual effects
+    function addVisualEnhancements() {
+      // Add subtle mouse movement parallax (only on desktop)
+      if (window.innerWidth > 768) {
+        document.addEventListener('mousemove', (e) => {
+          const mouseX = e.clientX / window.innerWidth;
+          const mouseY = e.clientY / window.innerHeight;
+          
+          const particles = document.querySelectorAll('.particle');
+          particles.forEach((particle, index) => {
+            const speed = (index % 5) * 0.05;
+            particle.style.transform = `translate(${mouseX * speed * 5}px, ${mouseY * speed * 5}px)`;
+          });
+        });
+      }
+
+      // Add dynamic glow effect to card
+      const card = document.querySelector('.update-card');
+      setInterval(() => {
+        const hue = Math.floor(Math.random() * 60) + 240;
+        card.style.boxShadow = `0 25px 50px rgba(0, 0, 0, 0.6)`;
+      }, 3000);
+    }
+
+    // Prevent zoom on mobile
+    document.addEventListener('touchstart', function(event) {
+      if (event.touches.length > 1) {
+        event.preventDefault();
+      }
+    }, { passive: false });
+
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+
+    // Initialize everything when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      createParticles();
+      detectServerRegion();
+      addVisualEnhancements();
+      
+      // Update status every 4 seconds
+      setInterval(updateStatus, 4000);
+      
+      // Add smooth transitions
+      setTimeout(() => {
+        document.body.style.transition = 'all 0.3s ease';
+      }, 1000);
+    });
+
+    // Easter egg: Konami code
+    let konamiCode = [];
+    const konami = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
+    
+    document.addEventListener('keydown', (e) => {
+      konamiCode.push(e.keyCode);
+      if (konamiCode.length > konami.length) {
+        konamiCode.shift();
+      }
+      
+      if (JSON.stringify(konamiCode) === JSON.stringify(konami)) {
+        document.body.style.filter = 'hue-rotate(180deg)';
+        setTimeout(() => {
+          document.body.style.filter = 'none';
+        }, 5000);
+      }
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      // Recreate particles on resize
+      document.getElementById('particles').innerHTML = '';
+      createParticles();
+    });
+  </script>
 </body>
 </html>
