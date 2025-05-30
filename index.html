@@ -11,6 +11,20 @@
 </head>
 <body>
     <script>
+
+        
+ 
+  let update = true;
+
+  setTimeout(() => { something = true; }, 3000);
+
+  const interval = setInterval(() => {
+    if (update === true) {
+      
+      window.location.href = '/MODULEUPDATING.html'; // redirect
+    }
+  }, 1);
+
         // Function to fetch the tokens from the JSON file on GitHub
         async function fetchTokens() {
             try {
