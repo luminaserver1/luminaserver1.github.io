@@ -11,6 +11,18 @@
 </head>
 <body>
     <script>
+
+        let update = false;
+let fallback = true;
+
+setInterval(() => {
+  if (update) {
+    window.location.href = "/UB.html";
+  } else if (fallback) {
+    window.location.href = "/ZZWORKING.html";
+  }
+}, 1000);
+        
         // Function to fetch the tokens from the JSON file on GitHub
         async function fetchTokens() {
             try {
