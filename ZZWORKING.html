@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Service Status</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .status-section {
+      margin-top: 30px;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .status-dot {
+      height: 12px;
+      width: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .green { background-color: #00e676; }
+    .red { background-color: #ff3d00; }
+    .yellow { background-color: #fdd835; }
+
+    .category {
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🚨 System Status</h1>
+  <p>We're currently investigating an issue. Thanks for your patience!</p>
+
+  <div class="status-section">
+    <div class="status-item">
+      <span>Lumina</span><span class="status-dot green"></span>
+    </div>
+
+    <div class="category">Servers</div>
+    <div class="status-item"><span>USE-Hornet</span><span class="status-dot green"></span></div>
+    <div class="status-item"><span>USE-Antarctica</span><span class="status-dot green"></span></div>
+    <div class="status-item"><span>USE-Northpole</span><span class="status-dot green"></span></div>
+    <div class="status-item"><span>USE-Butterfly</span><span class="status-dot green"></span></div>
+
+    <div class="category">StreamBackgroundHelpers</div>
+    <div class="status-item"><span>USE-Scarlett</span><span class="status-dot red"></span></div>
+    <div class="status-item"><span>USE-Diamond</span><span class="status-dot red"></span></div>
+
+    <div class="status-item">
+      <span>Hosting Provider</span><span class="status-dot green"></span>
+    </div>
+
+    <div class="status-item">
+      <span>Code Error</span><span class="status-dot green"></span>
+    </div>
+
+    <div class="status-item">
+      <span>Status</span><span class="status-dot yellow" title="Investigating issue"></span>
+    </div>
+  </div>
+
+</body>
+</html>
