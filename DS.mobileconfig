@@ -1,0 +1,53 @@
+			<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>FullScreen</key>
+			<true/>
+			<key>IgnoreManifestScope</key>
+			<true/>
+			<key>Icon</key>
+			<data>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</data>
+<key>IsRemovable</key>
+			<true/>
+			<key>Label</key>
+			<string>Lumina</string>
+			<key>PayloadDescription</key>
+			<string>Configures Web Clip</string>
+			<key>PayloadDisplayName</key>
+			<string>Lumina Web Clip</string>
+			<key>PayloadIdentifier</key>
+			<string>3578434</string>
+			<key>PayloadOrganization</key>
+			<string>Me</string>
+			<key>PayloadType</key>
+			<string>com.apple.webClip.managed</string>
+			<key>PayloadUUID</key>
+			<string>3578434</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>Precomposed</key>
+			<true/>
+			<key>URL</key>
+			<string>https://molnsc.github.io/IRL.html</string>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Configures web clip</string>
+	<key>PayloadDisplayName</key>
+	<string>Lumina Web Clip</string>
+	<key>PayloadIdentifier</key>
+	<string>appicon.Lumina</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>3578434</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+</dict>
+</plist>
